@@ -1,5 +1,5 @@
 import { Alert, StyleSheet, Text, View, Pressable } from 'react-native'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import Button from '@/components/Button'
 import { supabase } from '@/lib/supabase'
@@ -9,10 +9,24 @@ import { hp, wp } from '@/helpers/common'
 import Icon from '@/assets/icons'
 import { useRouter } from 'expo-router'
 import Avatar from '@/components/Avatar'
+import { fetchPosts } from '@/services/postService'
 
 const home = () => {
   const  {userData } = useAuth()
   const router = useRouter()
+
+  const [posts, setPosts] = useState([])
+
+  // Read the posts from Supabase
+  const getPosts = async() => {
+    let res = await fetchPosts();
+    console.log('got post results', res)
+    console.log('User:', res.data[0].user)
+  }
+
+  useEffect(() => {
+    getPosts()
+  }, [])
 
   // This is the final data that the user profile has to show.
   //console.log('User Data:', userData)

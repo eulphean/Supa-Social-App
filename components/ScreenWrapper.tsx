@@ -15,12 +15,10 @@ const ScreenWrapper = ({children, bg}) => {
     const pTop = top > 0 ? top: 30
     const style = {paddingTop: pTop, backgroundColor: bg}
     return (
-        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-            <View style={[styles.container, style]}>
-                <StatusBar style="dark" />
-                {children}
-            </View>
-        </TouchableWithoutFeedback>
+        <View style={[styles.container, style]}>
+            <StatusBar style="dark" />
+            {children}
+        </View>
     )
 }
 
