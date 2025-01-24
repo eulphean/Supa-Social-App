@@ -59,9 +59,8 @@ const editProfile = () => {
         }
     }
     const onPickImage = async () => {
-        console.log("Helo Image Picker")
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [4, 3],
             quality: 0.7
@@ -93,7 +92,7 @@ const editProfile = () => {
     <ScreenWrapper bg="white">
         <View style={styles.container}>
             <ScrollView style={{flex: 1}}>
-                <Header title={"Edit Profile"} />
+                <Header title={"Edit Profile"} showLogoutButton={false} />
 
                 {/* form */}
                 <View style={styles.form}>

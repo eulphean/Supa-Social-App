@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Alert} from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Alert, TouchableWithoutFeedback, Keyboard} from 'react-native'
 import React from 'react'
 import { useRouter } from 'expo-router'
 import BackButton from './BackButton'
@@ -7,7 +7,7 @@ import { theme } from '@/constants/theme'
 import Icon from '@/assets/icons'
 import { supabase } from '@/lib/supabase'
 
-const Header = ({title, showBackButton=true, mb=10}) => {
+const Header = ({title, showBackButton=true, showLogoutButton=true, mb=10}) => {
     const router = useRouter()
     const onLogout = async () => {
         // Logout from the app.
@@ -40,9 +40,13 @@ const Header = ({title, showBackButton=true, mb=10}) => {
             )
             }
             <Text style={styles.title}>{title || ""}</Text>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Icon name="logout" color={theme.colors.rose} />
-            </TouchableOpacity>
+            {
+                showLogoutButton && (
+                    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                        <Icon name="logout" color={theme.colors.rose} />
+                    </TouchableOpacity>
+                )
+            }
         </View>
     )
 }

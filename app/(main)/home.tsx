@@ -15,7 +15,7 @@ const home = () => {
   const router = useRouter()
 
   // This is the final data that the user profile has to show.
-  console.log('User Data:', userData)
+  //console.log('User Data:', userData)
 
   // const onLogout = async () => {
   //   // Logout from the app.
