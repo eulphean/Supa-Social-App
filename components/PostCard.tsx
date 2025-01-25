@@ -1,14 +1,15 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { theme } from '@/constants/theme'
 import { wp, hp } from '@/helpers/common'
 import Avatar from './Avatar'
-import moment from 'moment'
+import moment, { updateLocale } from 'moment'
 import Icon from '@/assets/icons'
 import RenderHtml from 'react-native-render-html'
 import { Image } from 'expo-image'
 import { getSupabaseUrl } from '@/services/imageService'
 import { Video } from 'expo-av'
+import { createPostLike, removePostLike } from '@/services/postService'
 
 const textStyle = {
     color: theme.colors.dark,
@@ -46,10 +47,49 @@ const PostCard = ({
   }
 
   const createdAt = moment(item?.created_at).format('MMM D');
-  const liked = false
-  const likes = []
 
-  const openPostDetails = () => {}
+  const onLike = async() => {
+    if (liked) {
+        // Get all the likes for the current post, which doesn't have the like by current user.
+        // That'll be the new likes for the post. 
+        const updatedLikes = likes.filter(like=>like.userId !== currentUser?.id);
+        // Update the likes. 
+        setLikes(updatedLikes)
+
+        // Remove the like from the server
+        let res = await removePostLike(item?.id, currentUser?.id);
+    
+        if (!res.success) {
+            Alert.alert('Post', 'Something went wrong')
+        }
+    } else {
+        // create new like
+        let data = {
+            userId: currentUser?.id,
+            postId: item?.id,
+        }
+    
+        // Update all the likes first. 
+        setLikes([...likes, data])
+        let res = await createPostLike(data);
+    
+        if (!res.success) {
+            Alert.alert('Post', 'Something went wrong')
+        }
+    }
+  }
+
+  const openPostDetails = () => {
+
+  }
+
+  const [likes, setLikes] = useState([])
+  // Has the current user liked by the current user?
+  const liked = likes.filter(like => like.userId === currentUser?.id)[0] ? true : false
+  useEffect(() => {
+    setLikes(item?.postLikes)
+  }, []);
+
   return (
     <View style={[styles.container, hasShadow && shadowStyles]}>
       <View style={styles.header}>
@@ -115,7 +155,7 @@ const PostCard = ({
       {/* like, comment, & share */}
       <View style={styles.footer}>
         <View style={styles.footerButton}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={onLike}>
                 <Icon 
                     name="heart" 
                     size={24} 
@@ -129,6 +169,8 @@ const PostCard = ({
                 }
             </Text>
         </View>
+
+        {/* footer */}
         <View style={styles.footerButton}>
             <TouchableOpacity>
                 <Icon name="comment" size={24} color={theme.colors.textLight} />

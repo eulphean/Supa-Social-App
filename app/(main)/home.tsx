@@ -20,16 +20,20 @@ const home = () => {
   const router = useRouter()
 
   const [posts, setPosts] = useState([])
+  const [hasMore, setHasMore] = useState(true)
 
   // Read the posts from Supabase
   const getPosts = async() => {
+    if (!hasMore) return null
     // A hard limit for the number of posts we want to fetch from the db.
     // When we scroll down, we want to call this method again, to fetch more posts.
-    limit = limit + 10
+    limit = limit + 5
 
     console.log('Fetching posts: ', limit)
     let res = await fetchPosts(limit);
     if (res.success) {
+      if (posts.length === res.data?.length)
+          setHasMore(false)
       setPosts(res.data)
     }
   }
@@ -54,7 +58,8 @@ const home = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
       .subscribe()
 
-    getPosts()
+    // Don't need to call this here to fetch posts.
+    // getPosts()
 
     // This callback is automatically called when the component is unmounted.
     return () => {
@@ -109,9 +114,18 @@ const home = () => {
               router={router}
             />
           }
-          ListFooterComponent={(
+          // have we reached the end?
+          onEndReached={() => {
+            getPosts()
+          }}
+          onEndReachedThreshold={0}
+          ListFooterComponent={hasMore ? (
             <View style={{marginVertical: posts?.length === 0 ? 200 : 30}}>
                 <Loading />
+            </View>
+          ) : (
+            <View style={{marginVertical: 30}}>
+              <Text style={styles.noPosts}>No more posts</Text>
             </View>
           )}
         />
@@ -168,5 +182,10 @@ const styles = StyleSheet.create({
   listStyle: {
     paddingTop: 20,
     paddingHorizontal: wp(4)
+  },
+  noPosts: {
+    fontSize: hp(2),
+    textAlign: 'center',
+    color: theme.colors.text
   }
 })

@@ -18,7 +18,7 @@ export const createOrUpdatePost = async(post) => {
                 return fileResult
         }
 
-        // Upsert is a combines the operation of Update and Insert
+        // Upsert is a combined the operation of Update and Insert
         const { data, error } = await supabase
             .from('posts')
             .upsert(post)
@@ -43,7 +43,11 @@ export const fetchPosts = async(limit=10) => {
        // 
        const {data, error} = await supabase
         .from('posts')
-        .select(`*, user: users(id, name, image)`)
+        .select(`
+            *, 
+            user: users(id, name, image),
+            postLikes (*)
+        `)
         .order('created_at', { ascending: false})
         .limit(limit)
 
@@ -57,5 +61,47 @@ export const fetchPosts = async(limit=10) => {
     } catch (error) {
         console.log('Fetch Post error: ', error)
         return { success: false, msg: 'Could not fetch the posts'}
+    }
+}
+
+export const createPostLike = async(postLike) => {
+    try {
+        const { data, error } = await supabase 
+            .from('postLikes')
+            .insert(postLike)
+            .select()
+            .single()
+
+        if (error) {
+            console.log('Post like error: ', error)
+            return { success: false, msg: 'Could not like the post'}
+        }
+
+        return {success: true, data: data}
+
+    } catch (error) {
+        console.log('Post like error: ', error)
+        return { success: false, msg: 'Could not like the post'}
+    }
+}
+
+export const removePostLike = async(postId, userId) => {
+    try {
+        const { error } = await supabase 
+            .from('postLikes')
+            .delete()
+            .eq('userId', userId)
+            .eq('postId', postId)
+
+        if (error) {
+            console.log('Post like error: ', error)
+            return { success: false, msg: 'Could not remove the post like'}
+        }
+
+        return {success: true}
+
+    } catch (error) {
+        console.log('Post like error: ', error)
+        return { success: false, msg: 'Could not remove the post like'}
     }
 }
