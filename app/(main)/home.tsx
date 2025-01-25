@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, View, Pressable } from 'react-native'
+import { Alert, StyleSheet, Text, View, Pressable, FlatList } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import Button from '@/components/Button'
@@ -10,7 +10,11 @@ import Icon from '@/assets/icons'
 import { useRouter } from 'expo-router'
 import Avatar from '@/components/Avatar'
 import { fetchPosts } from '@/services/postService'
+import PostCard from '@/components/PostCard'
+import Loading from '@/components/Loading'
+import { getUserData } from '@/services/userService'
 
+let limit = 0
 const home = () => {
   const  {userData } = useAuth()
   const router = useRouter()
@@ -19,13 +23,43 @@ const home = () => {
 
   // Read the posts from Supabase
   const getPosts = async() => {
-    let res = await fetchPosts();
-    console.log('got post results', res)
-    console.log('User:', res.data[0].user)
+    // A hard limit for the number of posts we want to fetch from the db.
+    // When we scroll down, we want to call this method again, to fetch more posts.
+    limit = limit + 10
+
+    console.log('Fetching posts: ', limit)
+    let res = await fetchPosts(limit);
+    if (res.success) {
+      setPosts(res.data)
+    }
+  }
+
+  // Callback fired when a new post is created.
+  const handlePostEvent = async(payload) => {
+    if (payload.eventType === 'INSERT' && payload?.new?.id) {
+      let newPost = {...payload.new}
+      console.log('New Post', newPost)
+      let res = await getUserData(newPost.userId)
+      newPost.user = res.success ? res.data : {}
+      // Make sure to put the new post on the top.
+      setPosts(prevPosts => [newPost, ...prevPosts])
+    }
   }
 
   useEffect(() => {
+    // Listen to real-time updates from the posts table. It's like subscribing to a channel / hook
+    // to listen to real-time updates from the database. 
+    let postChannel = supabase
+      .channel('posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
+      .subscribe()
+
     getPosts()
+
+    // This callback is automatically called when the component is unmounted.
+    return () => {
+      supabase.removeChannel(postChannel)
+    }
   }, [])
 
   // This is the final data that the user profile has to show.
@@ -61,6 +95,26 @@ const home = () => {
             </Pressable>
           </View>
         </View>
+
+        {/* posts */}
+        <FlatList
+          data={posts}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listStyle}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({item}) => 
+            <PostCard
+              item={item}
+              currentUser={userData}
+              router={router}
+            />
+          }
+          ListFooterComponent={(
+            <View style={{marginVertical: posts?.length === 0 ? 200 : 30}}>
+                <Loading />
+            </View>
+          )}
+        />
       </View>
       {/* <Button title="Log Out" onPress={onLogout} /> */}
     </ScreenWrapper>
@@ -110,5 +164,9 @@ const styles = StyleSheet.create({
   },
   pill: {
 
+  },
+  listStyle: {
+    paddingTop: 20,
+    paddingHorizontal: wp(4)
   }
 })

@@ -1,10 +1,13 @@
-import { View, Text } from 'react-native'
+import { View, Text, LogBox } from 'react-native'
 import React, { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'expo-router'
 import { getUserData } from '@/services/userService'
+
+// NOTE: This ignores these warnings on the device, but they still show up in the terminal
+LogBox.ignoreLogs(['Warning: TNodeChildrenRenderer', 'Warning: MemoizedTNodeRenderer', 'Warning: TRenderEngineProvider'])
 
 // We wrap the main layout with the AuthProvider to provide the authentication context to the entire application.
 const _layout = () => {
@@ -33,10 +36,10 @@ const MainLayout = () => {
       if (session) {
         // Fetch all the actual data from the public.users table in supabase.
         updateUserData(session?.user?.id)
-        router.replace('/home')
+        router.dismissTo('/home')
       } else {
         setUserData(null)
-        router.replace('/welcome')
+        router.dismissTo('/welcome')
       }
     })
   }, [])
