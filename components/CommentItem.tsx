@@ -7,7 +7,7 @@ import moment from 'moment'
 import Icon from '@/assets/icons'
 
 const CommentItem = ({ item, canDelete=true, onDelete=()=>{}}) => {
-  console.log('Comment Item:', item)
+//   console.log('Comment Item:', item)
 
   const createdAt = moment(item?.created_at).format('MMM d')
   

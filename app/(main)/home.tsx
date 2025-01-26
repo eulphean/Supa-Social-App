@@ -42,12 +42,25 @@ const home = () => {
   const handlePostEvent = async(payload) => {
     if (payload.eventType === 'INSERT' && payload?.new?.id) {
       let newPost = {...payload.new}
-      console.log('New Post', newPost)
+      
+      // Populate all the data in the new post.
       let res = await getUserData(newPost.userId)
       newPost.user = res.success ? res.data : {}
+      newPost.postLikes = []
+      newPost.comments = [{count: 0}]
+      
+      console.log('New Post Filled: ', newPost)
       // Make sure to put the new post on the top.
       setPosts(prevPosts => [newPost, ...prevPosts])
     }
+  }
+
+  console.log('Posts ', posts)
+  const handleNewComment = async (payload) => {
+    // let newComment = {...payload.new}
+    console.log('New Comment In Home: ')
+    // Go through each post, if the postId === comment.postId, then increment postCount
+
   }
 
   useEffect(() => {
@@ -61,9 +74,22 @@ const home = () => {
     // Don't need to call this here to fetch posts.
     // getPosts()
 
+    // Listen to real-time updates from the comments table for every new comment that is created.
+    // It's like subscribing to a channel / hook to listen to real-time updates from the database. 
+    const commentsChannel = supabase
+        .channel('comments')
+        .on('postgres_changes', { 
+            event: 'INSERT', // NOTE: We only want to get realtime updates for Insert only,.
+            schema: 'public', 
+            table: 'comments'
+        }, handleNewComment)
+        .subscribe()
+    // Subscribe to the real-time updates from comments table
+
     // This callback is automatically called when the component is unmounted.
     return () => {
       supabase.removeChannel(postChannel)
+      supabase.removeChannel(commentsChannel)
     }
   }, [])
 

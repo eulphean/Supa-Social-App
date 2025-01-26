@@ -113,8 +113,9 @@ const PostCard = ({
   const [likes, setLikes] = useState([])
   // Has the current user liked this post?
   const liked = likes.filter(like => like.userId === currentUser?.id)[0] ? true : false
-  // Set all the likes at mount, since we are getting all the likes in the post itself.
+
   useEffect(() => {
+    // Set all the likes at mount, since we are getting all the likes in the post itself.
     setLikes(item?.postLikes)
   }, []);
 

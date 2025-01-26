@@ -44,7 +44,7 @@ const postDetails = () => {
         let res = await createComment(data)
         setLoading(false)
         if (res.success) {
-            console.log('New Comment: ', res.data)
+            // console.log('New Comment: ', res.data)
             // Send notification later
             inputRef?.current?.clear()
             commentRef.current = ''
@@ -71,7 +71,7 @@ const postDetails = () => {
 
     // console.log('Post Details: ', post)
     const handleNewComment = async(payload) => {
-        console.log('Got new comment', payload)
+        // console.log('Got new comment', payload)
         let newComment = {...payload.new}
         // Get user data for that comment
         let res = await getUserData(newComment.userId)
