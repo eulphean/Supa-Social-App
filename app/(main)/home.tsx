@@ -55,13 +55,20 @@ const home = () => {
     }
   }
 
-  console.log('Posts ', posts)
-  const handleNewComment = async (payload) => {
-    // let newComment = {...payload.new}
-    console.log('New Comment In Home: ')
+  // console.log('Posts ', posts)
+  const handleComment = (payload) => {
+    const newComment = {...payload.new}
+    console.log('Something happened in home:', payload)
     // Go through each post, if the postId === comment.postId, then increment postCount
-
+    const newPosts = posts.map(post => {
+      if (post.id === newComment.postId) {
+        post.comments[0].count += 1
+      }
+    })
+    setPosts(newPosts)
   }
+
+  console.log('Posts in home: ', posts[0])
 
   useEffect(() => {
     // Listen to real-time updates from the posts table. It's like subscribing to a channel / hook
@@ -77,12 +84,12 @@ const home = () => {
     // Listen to real-time updates from the comments table for every new comment that is created.
     // It's like subscribing to a channel / hook to listen to real-time updates from the database. 
     const commentsChannel = supabase
-        .channel('comments')
+        .channel('home_comments') // Use a unique name for each channel, else it can cause conflict
         .on('postgres_changes', { 
             event: 'INSERT', // NOTE: We only want to get realtime updates for Insert only,.
             schema: 'public', 
             table: 'comments'
-        }, handleNewComment)
+        }, handleComment)
         .subscribe()
     // Subscribe to the real-time updates from comments table
 

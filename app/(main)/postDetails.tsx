@@ -88,7 +88,7 @@ const postDetails = () => {
         // Listen to real-time updates from the comments table for a "specific post with postId." 
         // It's like subscribing to a channel / hook to listen to real-time updates from the database. 
         const commentsChannel = supabase
-            .channel('comments')
+            .channel('post_details_comments') // Use a unique name for each channel, else it can cause conflict
             .on('postgres_changes', { 
                 event: 'INSERT', // NOTE: We only want to get realtime updates for Insert only,.
                 schema: 'public', 
