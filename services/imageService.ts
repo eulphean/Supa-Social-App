@@ -18,6 +18,23 @@ export const getSupabaseUrl = (filePath) => {
     return null
 }
 
+// Download this file locally
+export const downloadFile = async(url) => {
+    try {
+        // Extract the uri property from the object
+        const { uri } = await FileSystem.downloadAsync(url, getLocalFilePath(url))
+        return uri
+    } catch (error) {
+        return null
+    }
+}
+
+// Get local file
+export const getLocalFilePath = (filePath) => {
+    let fileName = filePath.split('/').pop();
+    return `${FileSystem.documentDirectory}${fileName}`
+}
+
 export const uploadFile = async(folderName, fileUri, isImage=true) => {
     try {
         let fileName = getFilePath(folderName, isImage)

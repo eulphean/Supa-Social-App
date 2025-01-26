@@ -1,15 +1,16 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View, Share } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { theme } from '@/constants/theme'
-import { wp, hp } from '@/helpers/common'
+import { wp, hp, stripHtmlTags } from '@/helpers/common'
 import Avatar from './Avatar'
 import moment, { updateLocale } from 'moment'
 import Icon from '@/assets/icons'
 import RenderHtml from 'react-native-render-html'
 import { Image } from 'expo-image'
-import { getSupabaseUrl } from '@/services/imageService'
+import { getSupabaseUrl, downloadFile } from '@/services/imageService'
 import { Video } from 'expo-av'
 import { createPostLike, removePostLike } from '@/services/postService'
+import Loading from './Loading'
 
 const textStyle = {
     color: theme.colors.dark,
@@ -34,7 +35,8 @@ const PostCard = ({
     item, 
     currentUser,
     router,
-    hasShadow=true
+    hasShadow=true,
+    showMoreIcon=true
 }) => {
   const shadowStyles = {
     shadowOffset: {
@@ -47,6 +49,26 @@ const PostCard = ({
   }
 
   const createdAt = moment(item?.created_at).format('MMM D');
+
+  // Share this message across the clients
+  const onShare = async() => {
+    // Clean the message by removing all html tags first.
+    let content = {message: stripHtmlTags(item?.body)}
+    if (item?.file) {
+        // About to download the file
+        setLoading(true)
+        // Download the file, then share the local uri
+        // NOTE: We can't share the remote file uri
+        const url = await downloadFile(getSupabaseUrl(item?.file))
+
+        // Done loading the file
+        setLoading(false)
+        content.url = url
+    }
+    Share.share(content)
+  }
+  // Loading for the media
+  const [loading, setLoading] = useState(false)
 
   const onLike = async() => {
     if (liked) {
@@ -79,17 +101,24 @@ const PostCard = ({
     }
   }
 
+  // Spin the postDetails modal using the router
   const openPostDetails = () => {
-
+    // Are we not showing more icons? Then, don't create a popup as well from here because 
+    // we are already in the popup.
+    if (!showMoreIcon) return null
+    // We are sending some post parameters to the screen.
+    router.push({pathname: 'postDetails', params: {postId: item?.id}})
   }
 
   const [likes, setLikes] = useState([])
-  // Has the current user liked by the current user?
+  // Has the current user liked this post?
   const liked = likes.filter(like => like.userId === currentUser?.id)[0] ? true : false
+  // Set all the likes at mount, since we are getting all the likes in the post itself.
   useEffect(() => {
     setLikes(item?.postLikes)
   }, []);
 
+//   console.log('Comments: ', item?.comments)
   return (
     <View style={[styles.container, hasShadow && shadowStyles]}>
       <View style={styles.header}>
@@ -105,10 +134,14 @@ const PostCard = ({
                 <Text style={styles.postTime}>{createdAt}</Text>
             </View>
         </View>
+        {
+            showMoreIcon && (
+                <TouchableOpacity onPress={openPostDetails}>
+                    <Icon name="threeDotsHorizontal" size={hp(3.4)} strokeWidth={3} color={theme.colors.text} />
+                </TouchableOpacity>
+            )
+        }
 
-        <TouchableOpacity onPress={openPostDetails}>
-            <Icon name="threeDotsHorizontal" size={hp(3.4)} strokeWidth={3} color={theme.colors.text} />
-        </TouchableOpacity>
       </View>
 
       {/* post body and media */}
@@ -170,21 +203,28 @@ const PostCard = ({
             </Text>
         </View>
 
-        {/* footer */}
+        {/* Comment */}
         <View style={styles.footerButton}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={openPostDetails}>
                 <Icon name="comment" size={24} color={theme.colors.textLight} />
             </TouchableOpacity>
             <Text style={styles.count}>
                 {
-                    0
+                    item?.comments[0]?.count
                 }
             </Text>
         </View>
+
         <View style={styles.footerButton}>
-            <TouchableOpacity>
-                <Icon name="share" size={24} color={theme.colors.textLight} />
-            </TouchableOpacity>
+            {
+                loading ? (
+                    <Loading size="small"/>
+                ) : (
+                    <TouchableOpacity onPress={onShare}>
+                        <Icon name="share" size={24} color={theme.colors.textLight} />
+                    </TouchableOpacity>
+                )
+            }
         </View>
       </View>
     </View>
