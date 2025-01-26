@@ -115,9 +115,9 @@ const PostCard = ({
   const liked = likes.filter(like => like.userId === currentUser?.id)[0] ? true : false
 
   useEffect(() => {
-    // Set all the likes at mount, since we are getting all the likes in the post itself.
+    // Set all the likes at mount (and when item updates), since we are getting all the likes in the post itself.
     setLikes(item?.postLikes)
-  }, []);
+  }, [item]);
 
 //   console.log('Comments: ', item?.comments)
   return (

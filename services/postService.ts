@@ -180,3 +180,24 @@ export const removeComment = async(commentId) => {
         return { success: false, msg: 'Could not remove the comment'}
     }
 }
+
+export const getComment = async(commentId) => {
+    try {
+        console.log('Getting comment for:', commentId)
+        const { data, error } = await supabase 
+            .from('comments')
+            .select()
+            .eq('id', commentId)
+
+        if (error) {
+            console.log('Comment error: ', error)
+            return { success: false, msg: 'Could not get your comment'}
+        }
+
+        return {success: true, data: data}
+
+    } catch (error) {
+        console.log('Comment error: ', error)
+        return { success: false, msg: 'Could not get your comment'}
+    }
+}

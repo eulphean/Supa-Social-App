@@ -54,13 +54,12 @@ const postDetails = () => {
     }
 
     const onDeleteComment = async(comment) => {
-        console.log('Deleting comment:', comment)
         let res = await removeComment(comment?.id)
         if (res.success) {
             // Filter out the current comment from this post (it's the one that we just deleted)
             setPost(prevPost => {
                 let updatedPost = {...prevPost}
-                // This updates 
+                // This removes the comment that has been deleted. 
                 updatedPost.comments = updatedPost.comments.filter(c => c.id !== comment.id)
                 return updatedPost
             })

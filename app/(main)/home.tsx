@@ -9,7 +9,7 @@ import { hp, wp } from '@/helpers/common'
 import Icon from '@/assets/icons'
 import { useRouter } from 'expo-router'
 import Avatar from '@/components/Avatar'
-import { fetchPosts } from '@/services/postService'
+import { fetchPosts, getComment } from '@/services/postService'
 import PostCard from '@/components/PostCard'
 import Loading from '@/components/Loading'
 import { getUserData } from '@/services/userService'
@@ -49,31 +49,85 @@ const home = () => {
       newPost.postLikes = []
       newPost.comments = [{count: 0}]
       
-      console.log('New Post Filled: ', newPost)
+      // console.log('New Post Filled: ', newPost)
       // Make sure to put the new post on the top.
       setPosts(prevPosts => [newPost, ...prevPosts])
     }
   }
 
-  // console.log('Posts ', posts)
-  const handleComment = (payload) => {
-    const newComment = {...payload.new}
-    console.log('Something happened in home:', payload)
-    // Go through each post, if the postId === comment.postId, then increment postCount
-    const newPosts = posts.map(post => {
-      if (post.id === newComment.postId) {
-        post.comments[0].count += 1
-      }
-    })
-    setPosts(newPosts)
+  // console.log('Home Posts: ', posts);
+
+  // Callback fired when a comment is added or removed. 
+  const handleCommentUpdate = async (payload) => {
+    // // Insertion is handled
+    if (payload.eventType === 'INSERT') {
+      console.log('Adding comment: ', payload)
+      const newComment = {...payload.new}
+      setPosts(prevPosts => {
+        return prevPosts.map(post => {
+          if (post.id === newComment.postId) {
+            return {
+              ...post,
+              comments: [{count: post.comments[0].count + 1}]
+            }
+          }
+          return post
+        })
+      })
+    } else if (payload.eventType === 'DELETE') { 
+      // NOTE: TODO! Don't know how to handle deleting a comment and updating it in home!
+      // Realtime updates only give information about the "CommentID" that has been deleted.
+      // We don't know anything about other things.
+      const oldComment = {...payload.old}
+      console.log('Deleting Comment: ', oldComment)
+    }
   }
 
-  console.log('Posts in home: ', posts[0])
+  // NOTE: State is badly mismanaged between components and that's what's causing these issues
+  // where the likes and comments are not synced with each other.
+  const handlePostLikesUpdate = (payload) => {
+    if (payload.eventType === 'INSERT') {      
+      const newLike = {...payload.new}
+      console.log('Adding like: ', newLike)
+      setPosts(prevPosts => {
+        return prevPosts.map(post => {
+          if (post.id === newLike.postId) {
+            return {
+              ...post,
+              postLikes: [newLike]
+            }
+          }
+          return post
+        })
+      })
+    } else if (payload.eventType === 'DELETE') {
+      const oldLike = {...payload.old}
+      console.log('Deleting like: ', oldLike)
+    }
+
+
+    // // Go through each post, if the postId === newLike.postId, then increment/decrement postCount
+    // const postToUpdate = posts.find(post => posts.id === newLike.postId)
+    // console.log('Post to Update', postToUpdate)
+    // const newPosts = posts.map(post => {
+    //   // Update your post.
+    //   if (post.id === newLike.postId) {
+    //     if (newLike.eventType === 'INSERT')
+    //       post.postLikes.push(newLike)
+    //     else if (newComment.eventType === 'DELETE') {
+    //       // post.comments[0].count -= 1
+    //     }
+    //   }
+    // })
+    // setPosts(newPosts)
+  }
+
+  // console.log('Posts in home: ', posts[0])
 
   useEffect(() => {
     // Listen to real-time updates from the posts table. It's like subscribing to a channel / hook
     // to listen to real-time updates from the database. 
-    let postChannel = supabase
+    const postChannel = supabase
       .channel('posts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts'}, handlePostEvent)
       .subscribe()
@@ -86,17 +140,31 @@ const home = () => {
     const commentsChannel = supabase
         .channel('home_comments') // Use a unique name for each channel, else it can cause conflict
         .on('postgres_changes', { 
-            event: 'INSERT', // NOTE: We only want to get realtime updates for Insert only,.
+            event: '*', // NOTE: We only want to get realtime updates for Insert only,.
             schema: 'public', 
             table: 'comments'
-        }, handleComment)
+        }, handleCommentUpdate)
         .subscribe()
     // Subscribe to the real-time updates from comments table
+
+    // This is broken right now and will need to be fixed.
+    // Listen to real-time updates from the comments table for every new comment that is created.
+    // It's like subscribing to a channel / hook to listen to real-time updates from the database. 
+    const postLikesChannel = supabase
+        .channel('home_post_likes') // Use a unique name for each channel, else it can cause conflict
+        .on('postgres_changes', { 
+            event: '*', // NOTE: We only want to get realtime updates for Insert only,.
+            schema: 'public', 
+            table: 'postLikes'
+        }, handlePostLikesUpdate)
+        .subscribe()
+    // Subscribe to the real-time updates from postLikes table
 
     // This callback is automatically called when the component is unmounted.
     return () => {
       supabase.removeChannel(postChannel)
       supabase.removeChannel(commentsChannel)
+      supabase.removeChannel(postLikesChannel)
     }
   }, [])
 
@@ -139,7 +207,7 @@ const home = () => {
           data={posts}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listStyle}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => item?.id.toString()}
           renderItem={({item}) => 
             <PostCard
               item={item}
