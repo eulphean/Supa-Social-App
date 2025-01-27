@@ -36,6 +36,7 @@ const RichTextEditor = ({ editorRef, onChange }) => {
         ref={editorRef}
         containerStyle={styles.rich}
         editorStyle={styles.contentStyle}
+        webViewProps={{autoCorrect: true}}
         placeholder={"What's on your mind?"}
         onChange={onChange}
       />

@@ -13,10 +13,11 @@ import Icon from '@/assets/icons'
 import CommentItem from '@/components/CommentItem'
 import { supabase } from '@/lib/supabase'
 import { getUserData } from '@/services/userService'
+import { createNotification } from '@/services/notification'
 
 const postDetails = () => {
     // Extract the post id from the route.
-    const {postId} = useLocalSearchParams()
+    const {postId, commentId} = useLocalSearchParams()
     const {userData} = useAuth()
 
     const [post, setPost] = useState(null)
@@ -44,6 +45,16 @@ const postDetails = () => {
         let res = await createComment(data)
         setLoading(false)
         if (res.success) {
+            // Is the user commenting on their own post, then don't notify!
+            if (userData.id !== post.userId) {
+                let notify = {
+                    senderId: userData.id,
+                    receiverId: post.userId,
+                    title: 'commented on your post',
+                    data: JSON.stringify({postId: post.id, commentId: res?.data?.id})
+                }
+                createNotification(notify)
+            }
             // console.log('New Comment: ', res.data)
             // Send notification later
             inputRef?.current?.clear()
@@ -202,6 +213,7 @@ const postDetails = () => {
                             key={comment?.id?.toString()}
                             item={comment}
                             onDelete={onDeleteComment}
+                            highlight={comment?.id.toString() === commentId}
                             // Has this user created this comment or this post? 
                             canDelete={userData.id === comment.userId || userData.id === post.userId}
                         />
