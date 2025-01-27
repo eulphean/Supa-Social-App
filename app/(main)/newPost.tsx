@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, View, Keyboard, 
   TouchableWithoutFeedback, TouchableOpacity, Pressable } from 'react-native'
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import Header from '@/components/Header'
 import { theme } from '@/constants/theme'
@@ -8,7 +8,7 @@ import { wp, hp } from '@/helpers/common'
 import Avatar from '@/components/Avatar'
 import { useAuth } from '@/contexts/AuthContext'
 import RichTextEditor from '@/components/RichTextEditor'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import Icon from '@/assets/icons'
 import Button from '@/components/Button'
 import * as ImagePicker from 'expo-image-picker'
@@ -24,6 +24,27 @@ const newPost = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [file, setFile] = useState(null)
+  // Extract the params that are passed from postDetails
+  // We need the body and file.
+  const postParams = useLocalSearchParams()
+
+  console.log('Post Params:', postParams)
+  // If there are postParams, we should set the post body and post file.
+  useEffect(() => {
+    if (postParams && postParams.id) {
+      // Update the posts data and file to show up in this edit post.
+      setFile(postParams.file || null)
+      
+      // Update the post body
+      bodyRef.current = postParams.body
+
+      // Give a slight delay before the content comes to the screen.
+      // Sometimes is shows and sometimes it doesn't, so we need this delay
+      setTimeout(() => {
+        editorRef?.current?.setContentHTML(postParams.body)
+      }, 1000)
+    }
+  }, [])
 
   // Pick an image
   const onPick = async(isImage) => {
@@ -51,6 +72,11 @@ const newPost = () => {
       file: file,
       body: bodyRef.current,
       userId: userData?.id
+    }
+    
+    // When updating the post, we add the "postId"
+    if (postParams && postParams.id) {
+      data.id = postParams.id
     }
 
     // Create post
@@ -93,12 +119,14 @@ const newPost = () => {
 
   const getFileUri = file => {
     if (!file) return null
+
+    // Local file pulled from the device
     if (isLocalFile(file)) {
       return file.uri
     }
 
-    // If the file is remote
-    return getSupabaseUrl(file)?.uri
+    // Get the remote image file from Supabase
+    return getSupabaseUrl(file)
   }
 
   return (
@@ -169,7 +197,7 @@ const newPost = () => {
             </ScrollView>
             <Button
               buttonStyle={{height: hp(6.2)}}
-              title="Post"
+              title={ postParams.body ? 'Update' : 'Post'}
               loading={loading}
               hasShadow={false}
               onPress={onSubmit}

@@ -27,7 +27,7 @@ const home = () => {
     if (!hasMore) return null
     // A hard limit for the number of posts we want to fetch from the db.
     // When we scroll down, we want to call this method again, to fetch more posts.
-    limit = limit + 5
+    limit = limit + 10
 
     console.log('Fetching posts: ', limit)
     let res = await fetchPosts(limit);
@@ -40,6 +40,7 @@ const home = () => {
 
   // Callback fired when a new post is created.
   const handlePostEvent = async(payload) => {
+    console.log('Post Home Realtime: ', payload)
     if (payload.eventType === 'INSERT' && payload?.new?.id) {
       let newPost = {...payload.new}
       
@@ -52,6 +53,31 @@ const home = () => {
       // console.log('New Post Filled: ', newPost)
       // Make sure to put the new post on the top.
       setPosts(prevPosts => [newPost, ...prevPosts])
+    }
+
+    // Filter out the deleted posts.
+    if (payload.eventType === 'DELETE' && payload?.old?.id) {
+      setPosts(prevPosts => {
+        const updatedPosts = prevPosts.filter(post => post.id !== payload.old.id)
+        return updatedPosts
+      })
+    }
+
+    // // When post is updated, we get data in the new file.
+    if (payload.eventType === 'UPDATE' && payload?.new?.id) {
+      setPosts(prevPosts => {
+        console.log('Prev Posts: ', prevPosts)
+        const updatedPosts = prevPosts.map(post => {
+          if (post.id === payload.new.id) {
+            post.body = payload.new.body
+            post.file = payload.new.file
+          }
+          return post
+        })
+
+        console.log('Updated Posts: ', updatedPosts)
+        return updatedPosts
+      })
     }
   }
 
@@ -279,10 +305,6 @@ const styles = StyleSheet.create({
   },
   pill: {
 
-  },
-  listStyle: {
-    paddingTop: 20,
-    paddingHorizontal: wp(4)
   },
   noPosts: {
     fontSize: hp(2),

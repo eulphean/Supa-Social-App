@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import React, { useState, useEffect, useRef } from 'react'
 import { useLocalSearchParams } from 'expo-router'
-import { fetchPostDetails, createComment, removeComment } from '@/services/postService'
+import { fetchPostDetails, createComment, removeComment, removePost } from '@/services/postService'
 import { wp, hp } from '@/helpers/common'
 import { theme } from '@/constants/theme'
 import PostCard from '@/components/PostCard'
@@ -115,6 +115,27 @@ const postDetails = () => {
         setStartLoading(false)
     }
 
+    const onDeletePost = async(item) => {
+        // console.log('Delete post: ', item)
+        // Item is the post or we can use the post?.id
+        let res = await removePost(item.id)
+        if (res.success) {
+            router.back();
+        } else {
+            Alert.alert('Post', res.msg)
+        }
+    }
+    
+    const onEditPost = async(item) => {
+        console.log('Edit post: ', item)
+        // Dismiss the model
+        router.back()
+
+        // Move to the new post
+        router.push({pathname: 'newPost', params:{...item}})
+    }
+
+
     // Show a loader until the post is loaded completely. 
     if (startLoading) {
         return (
@@ -144,6 +165,9 @@ const postDetails = () => {
                 hasShadow={false}
                 // hide icons that we don't need
                 showMoreIcon={false} 
+                showDelete={true}
+                onDelete={onDeletePost}
+                onEdit={onEditPost}
             />
 
             {/* comment input */}

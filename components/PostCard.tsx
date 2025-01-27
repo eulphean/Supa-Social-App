@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, Share } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View, Share, Alert } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { theme } from '@/constants/theme'
 import { wp, hp, stripHtmlTags } from '@/helpers/common'
@@ -36,7 +36,10 @@ const PostCard = ({
     currentUser,
     router,
     hasShadow=true,
-    showMoreIcon=true
+    showMoreIcon=true,
+    showDelete=false,
+    onDelete=()=>{},
+    onEdit=()=>{}
 }) => {
   const shadowStyles = {
     shadowOffset: {
@@ -66,6 +69,21 @@ const PostCard = ({
         content.url = url
     }
     Share.share(content)
+  }
+
+  const handlePostDelete = () => {
+   Alert.alert('Confirm', 'Are you sure you want to delete this post?', [
+        {
+            text: 'Cancel',
+            onPress: () => console.log('modal cancelled'),
+            style: 'cancel'
+        },
+        {
+            text: 'Delete',
+            onPress: () => onDelete(item),
+            style: 'destructive'
+        }
+    ])
   }
   // Loading for the media
   const [loading, setLoading] = useState(false)
@@ -140,6 +158,18 @@ const PostCard = ({
                 <TouchableOpacity onPress={openPostDetails}>
                     <Icon name="threeDotsHorizontal" size={hp(3.4)} strokeWidth={3} color={theme.colors.text} />
                 </TouchableOpacity>
+            )
+        }
+        {
+            showDelete && currentUser.id === item?.userId && (
+                <View style={styles.actions}>
+                    <TouchableOpacity onPress={() => onEdit(item)}>
+                        <Icon name="edit" size={hp(2.5)} color={theme.colors.text} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handlePostDelete}>
+                        <Icon name="delete" size={hp(2.5)} color={theme.colors.rose} />
+                    </TouchableOpacity>
+                </View>
             )
         }
 
@@ -288,6 +318,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4
+    },
+    actions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 18
     },
     count: {
         color: theme.colors.text,

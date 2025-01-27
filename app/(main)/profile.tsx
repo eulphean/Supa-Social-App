@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, View, Pressable, FlatList } from 'react-native'
+import React, {useState} from 'react'
 import ScreenWrapper from '@/components/ScreenWrapper'
 import { useAuth } from '@/contexts/AuthContext'
 import Header from '@/components/Header'
@@ -8,20 +8,74 @@ import { hp, wp } from '@/helpers/common'
 import { theme } from '@/constants/theme'
 import Icon from '@/assets/icons'
 import Avatar from '@/components/Avatar'
+import { fetchPosts } from '@/services/postService'
+import PostCard from '@/components/PostCard'
+import Loading from '@/components/Loading'
 
+let limit = 0
 const profile = () => {
   const { userData, setUserData } = useAuth()
   const router = useRouter()
+  const [posts, setPosts] = useState([])
+  const [hasMore, setHasMore] = useState(true)
+
+  // Read the posts from Supabase
+  const getPosts = async() => {
+    if (!hasMore) return null
+    // A hard limit for the number of posts we want to fetch from the db.
+    // When we scroll down, we want to call this method again, to fetch more posts.
+    limit = limit + 10
+
+    console.log('Fetching posts: ', limit)
+    let res = await fetchPosts(limit, userData.id);
+    if (res.success) {
+      if (posts.length === res.data?.length)
+          setHasMore(false)
+      setPosts(res.data)
+    }
+  }
+  
+
   return (
     <ScreenWrapper bg="white">
-      <UserHeader userData={userData} router={router} />
+       {/* posts */}
+       <FlatList
+        data={posts}
+        // Pass the header
+        ListHeaderComponent={<UserHeader userData={userData} router={router} noPadding={true} />}
+        ListHeaderComponentStyle={{marginBottom: 30}}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listStyle}
+        keyExtractor={item => item?.id.toString()}
+        renderItem={({item}) => 
+          <PostCard
+            item={item}
+            currentUser={userData}
+            router={router}
+          />
+        }
+        // have we reached the end?
+        onEndReached={() => {
+          getPosts()
+        }}
+        onEndReachedThreshold={0}
+        ListFooterComponent={hasMore ? (
+          <View style={{marginVertical: posts?.length === 0 ? 100 : 30}}>
+              <Loading />
+          </View>
+        ) : (
+          <View style={{marginVertical: 30}}>
+            <Text style={styles.noPosts}>No more posts</Text>
+          </View>
+        )}
+      />
     </ScreenWrapper>
   )
 }
 
-const UserHeader = ({ userData, router }) => {
+const UserHeader = ({ userData, router, noPadding=false }) => {
   return (
-    <View style={{flex: 1, backgroundColor: "white", paddingHorizontal: wp(4)}}>
+    <View style={{flex: 1, backgroundColor: "white", paddingHorizontal: noPadding? wp(0) : wp(4)}}>
       <Header title="Profile" mb={30}/>
       <View style={styles.container}>
         <View style={{gap: 15}}>
@@ -99,5 +153,14 @@ const styles = StyleSheet.create({
     fontSize: hp(2.0),
     fontWeight: theme.fonts.semibond,
     color: theme.colors.textLight
+  },
+  listStyle: {
+    // paddingTop: 20,
+    paddingHorizontal: wp(4)
+  },
+  noPosts: {
+    fontSize: hp(2),
+    textAlign: 'center',
+    color: theme.colors.text
   }
 })
